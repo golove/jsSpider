@@ -33,12 +33,15 @@ function findHref(html) {
     let hreflist = []
     let b = /html_data([^<>"\']*)/gi
     let hrefs = html.match(b)
-    hrefs.forEach((e, i) => {
-        if (i % 2 == 0) {
-            let href = "https://k6.c5cbca7s.pw/pw/" + e
-            hreflist.unshift(href)
-        }
-    })
+    if (hrefs) {
+        hrefs.forEach((e, i) => {
+            if (i % 2 == 0) {
+                let href = "https://k6.c5cbca7s.pw/pw/" + e
+                hreflist.unshift(href)
+            }
+        })
+    }
+
     hreflist.splice(0, 1)
     return hreflist
 };
@@ -53,11 +56,16 @@ function findImgsrc(html) {
     let titlelist = html.match(t)
     // console.log(titlelist)
     let hrefs = []
-    srcs.forEach((e, i) => {
-        if (i % 2 == 0) {
-            hrefs.unshift(e)
-        }
-    })
+
+    if (srcs & titlelist) {
+        srcs.forEach((e, i) => {
+            if (i % 2 == 0) {
+                hrefs.unshift(e)
+            }
+        })
+    }
+
+
     return { 'title': titlelist[0], 'href': hrefs, 'star': 0, 'collect': false, 'delete': false, 'download': false }
 };
 
