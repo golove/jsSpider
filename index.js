@@ -1,5 +1,10 @@
+
 const request = require("request");
-// const cheerio = require('cheerio');
+const SqliteDB = require('./sqlite.js').SqliteDB;
+const file = 'pictron.db';
+const sqliteDB = new SqliteDB(file);
+const host = "http://w11.a6def2ef910.rocks/pw/";
+
 
 const promiseRequest = (url) => {
   const userAgents = [
@@ -26,60 +31,62 @@ const promiseRequest = (url) => {
   const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
   const headers = { "User-Agent": userAgent };
   const opts = { url, headers };
-  return new Promise((resolve,reject) => {
+  return new Promise((resolve, reject) => {
     request(opts, function (error, response, body) {
       if (response.statusCode === 200) {
         resolve(body);
-      }else{
-        reject(error)
+      } else {
+        reject(error);
       }
     });
   });
 };
- function getHref(html) {
+function getHref(html) {
   const b = /html_data\/14\/([^<>"]*)/gi;
   const href = html.match(b);
   return Array.from(new Set(href));
 }
 
- function getSrc(html) {
+function getSrc(html, url) {
   const b = /http:\/\/p1.pi22y.cc\/([^<>"]*)\.jpg/gi;
   const srcs = html.match(b);
   // 匹配 img 的 title 值
   const t = /<span id="subject_tpc">(.*?)<\/span>/gi;
   const title = t.exec(html);
-  const img = {
-    title: title[1],
-    href: url,
-    srcs: Array.from(new Set(srcs)),
-    star: 0,
-    collect: false,
-    deleted: false,
-    download: false,
-  };
-  // console.log(img)
+  const img = [
+    title[1],
+    url,
+    Array.from(new Set(srcs)),
+    0,
+    false,
+    false,
+    false,
+  ];
   return img;
 }
 
-const url = "http://w11.a6def2ef910.rocks/pw/thread.php?fid=14&page=3";
-const host = "http://w11.a6def2ef910.rocks/pw/";
 
-const imgArr = []
-async function doSpider(url){
-  const html = await promiseRequest(url)
-    if(url ==='http://w11.a6def2ef910.rocks/pw/thread.php?fid=14&page=3'){
-      const hrefs = getHref(html)
-      for (const iterator of hrefs) {
-        doSpider(host + iterator).catch(err=>{
-          console.error(err)
-        })
-      }
-    }else{
-      if(html) {
-        imgArr.push(getSrc(html))
-      }   
+ async function doSpider(url, tableName, falg) {
+
+  const html = await promiseRequest(url);
+  if (falg) {
+    const createTableSql = `CREATE TABLE IF NOT EXISTS ${tableName} (title TEXT,href TEXT,srcs BLOB,star INTEGER,collect NUMERIC,deleted NUMERIC,download NUMERIC);`;
+    sqliteDB.createTable(createTableSql);
+    const hrefs = getHref(html);
+    for (const iterator of hrefs) {
+      doSpider(host + iterator, tableName, false).catch((err) => {
+        console.error(err);
+      });
     }
+  } else {
+    if (html) {
+      const img = getSrc(html, url);
+      console.log(img)
+      const insertSql = 'INSERT INTO beauty VALUES (?,?,?,?,?,?,?);';
+      sqliteDB.insertData(insertSql, img);
+    }
+  }
 }
-doSpider(url).catch(err=>{
-  console.error('first err '+err)
-})
+
+const rooturl = "http://x11.7086xx.com/pw/thread.php?fid=14";
+doSpider(rooturl,'beauty',true)
